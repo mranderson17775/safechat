@@ -1,6 +1,9 @@
 # Use an official OpenJDK runtime as a parent image
 FROM openjdk:17-jdk-slim
 
+# Install Node.js and npm
+RUN apt-get update && apt-get install -y nodejs npm
+
 # Set the working directory in the container
 WORKDIR /app
 
@@ -13,14 +16,16 @@ COPY .mvn .mvn
 COPY src ./src
 COPY safechat-frontend ./safechat-frontend
 
-# Install Maven
-RUN apt-get update && apt-get install -y maven
-
 # Ensure Maven wrapper is executable
 RUN chmod +x ./mvnw
 
-# Build the frontend first
-RUN cd safechat-frontend && npm install && npm run build
+# Build the frontend
+WORKDIR /app/safechat-frontend
+RUN npm install
+RUN npm run build
+
+# Switch back to main directory
+WORKDIR /app
 
 # Build the backend
 RUN ./mvnw clean package -DskipTests
