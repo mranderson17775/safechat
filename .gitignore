@@ -1,0 +1,51 @@
+Set-Content .gitignore @"
+# Node.js and Build Directories
+node_modules/
+build/
+/frontend/build/
+safechat-frontend/build/
+
+# Environment Files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Frontend Specific
+/frontend/node_modules/
+safechat-frontend/node_modules/
+
+# Package Managers
+.pnp
+.pnp.js
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Java (Backend) Specific
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# IDE Files
+.idea
+*.iws
+*.iml
+*.ipr
+.vscode/
+.settings
+.classpath
+.project
+
+# Operating System
+.DS_Store
+Thumbs.db
+
+# Testing
+/coverage
+
+# Misc
+*.log
+"@
