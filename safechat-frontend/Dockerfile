@@ -1,26 +1,26 @@
-# Use Node 20 as specified in your package.json engines
-FROM node:20-alpine
+# Use an official Node runtime as the base image
+FROM node:16-alpine
 
-# Set working directory
+# Set the working directory in the container
 WORKDIR /app
 
-# Copy package files
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
 # Install dependencies
 RUN npm install
 
-# Copy all files
+# Copy the rest of the application code
 COPY . .
 
-# Build the application
+# Build the React app
 RUN npm run build
 
-# Install serve to run the production build
+# Install serve to run the application
 RUN npm install -g serve
 
-# Expose port
+# Expose the port the app runs on
 EXPOSE 3000
 
-# Serve the build
+# Start the app
 CMD ["serve", "-s", "build", "-l", "3000"]

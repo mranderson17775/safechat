@@ -1,13 +1,47 @@
-version: '3'
+version: '3.8'
+
 services:
-  oracle:
-    image: container-registry.oracle.com/database/express:latest
+  # Backend Spring Boot Application
+  backend:
+    build: 
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "1521:1521"
-      - "5500:5500"
+      - "${PORT:-8080}:8080"
     environment:
-      - ORACLE_PWD=password
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://${RAILWAY_DATABASE_HOST}:${RAILWAY_DATABASE_PORT}/${RAILWAY_DATABASE_NAME}
+      - SPRING_DATASOURCE_USERNAME=${RAILWAY_DATABASE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${RAILWAY_DATABASE_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+    depends_on:
+      - postgres
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=${RAILWAY_DATABASE_NAME}
+      - POSTGRES_USER=${RAILWAY_DATABASE_USERNAME}
+      - POSTGRES_PASSWORD=${RAILWAY_DATABASE_PASSWORD}
+    ports:
+      - "5432:5432"
     volumes:
-      - oracle-data:/opt/oracle/oradata
+      - postgres-data:/var/lib/postgresql/data
+
+  # Frontend React Application (optional for local development)
+  frontend:
+    build: 
+      context: ./safechat-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
 volumes:
-  oracle-data:
+  postgres-data:
