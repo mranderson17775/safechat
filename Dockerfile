@@ -1,24 +1,20 @@
-# Use OpenJDK 17
+# Use an official OpenJDK runtime as a parent image
 FROM openjdk:17-jdk-slim
 
-# Set working directory
+# Set the working directory in the container
 WORKDIR /app
 
-# Copy Maven wrapper
-COPY mvnw .
-COPY .mvn .mvn
+# Copy the entire project
+COPY . .
 
-# Copy pom.xml
-COPY pom.xml .
+# Ensure Maven wrapper is executable
+RUN chmod +x ./mvnw
 
-# Copy source code
-COPY src ./src
+# Use Maven to package the application
+RUN ./mvnw clean package -DskipTests
 
-# Build the application
-RUN ./mvnw package -DskipTests
-
-# Expose port
+# Expose the port the app runs on
 EXPOSE 8080
 
 # Run the jar file
-ENTRYPOINT ["java","-jar","target/*.jar"]
+ENTRYPOINT ["java","-jar","target/secure-messaging-0.0.1-SNAPSHOT.jar"]
