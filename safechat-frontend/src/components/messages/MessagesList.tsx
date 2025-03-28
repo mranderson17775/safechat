@@ -388,7 +388,7 @@ const MessagesList: React.FC = () => {
                         isOwn ? 'justify-end' : 'justify-start'
                       } w-full`}
                     >
-                        <div className="flex flex-col w-full max-w-[80%] sm:max-w-[70%] md:max-w-[60%] lg:max-w-[50%]">
+                      <div className="flex flex-col w-full max-w-[80%] sm:max-w-[70%] md:max-w-[60%] lg:max-w-[50%]">
                         <div 
                           className={`text-xs mb-1 ${
                             isOwn ? 'text-right' : 'text-left'
@@ -396,64 +396,66 @@ const MessagesList: React.FC = () => {
                         >
                           {senderName}
                         </div>
-                        
-                        <div className="flex items-center w-full">
-                          <div
-                            className={`p-3 rounded-lg break-words w-full border ${
-                              isOwn
-                              ? 'bg-blue-500 text-white border-blue-600'
-                              : 'bg-gray-300 border-gray-400'
-                            }max-w-[300px] sm:max-w-[400px] md:max-w-[500px] lg:max-w-[600px] break-words whitespace-pre-wrap`}
-                          >
-                            <div className="flex items-center">
-                              {message.isEncrypted && (
-                                <span className="mr-1 text-xs">🔒</span>
-                              )}
-                              <div className="break-words w-full whitespace-pre-wrap">{message.content}</div>
-                            </div>
-                            
-                            {message.isReadOnce && (
-                              <div className="text-xs mt-1 italic">
-                                Read once message
-                              </div>
+                        <div
+                          className={`p-3 rounded-lg w-full border ${
+                            isOwn
+                            ? 'bg-blue-500 text-white border-blue-600'
+                            : 'bg-gray-300 border-gray-400'
+                          } break-words whitespace-pre-wrap`}
+                          style={{ 
+                            wordBreak: 'break-word', 
+                            overflowWrap: 'break-word',
+                            maxWidth: '100%'
+                          }}
+                        >
+                          <div className="flex items-center">
+                            {message.isEncrypted && (
+                              <span className="mr-1 text-xs">🔒</span>
                             )}
-                            
-                            {message.expiresAt && (
-                              <div className="text-xs mt-1 italic">
-                                Expires in {format(new Date(message.expiresAt), 'HH:mm:ss')}
-                              </div>
-                            )}
-                            
-                            <div className={`text-xs mt-1 flex justify-between ${
-                              isOwn ? 'text-blue-200' : 'text-gray-600'
-                            }`}>
-                              <span>{format(new Date(message.timestamp), 'HH:mm')}</span>
-                              {isOwn && (
-                                <span className="ml-2">
-                                  {message.read ? '✓✓' : '✓'}
-                                </span>
-                              )}
-                            </div>
+                            <div className="break-words w-full">{message.content}</div>
                           </div>
                           
-                          {isOwn && (
-                            <div className="ml-2 flex flex-col justify-end mb-2">
-                              <button
-                                onClick={() => deleteMessage(message)}
-                                disabled={deletingMessages.has(message.messageId || message.id)}
-                                className={`text-xs hover:text-red-500 ${
-                                  deletingMessages.has(message.messageId || message.id)
-                                    ? 'text-gray-400 cursor-not-allowed' 
-                                    : 'text-gray-500'
-                                }`}
-                              >
-                                {deletingMessages.has(message.messageId || message.id) 
-                                  ? 'Deleting...' 
-                                  : 'Delete'}
-                              </button>
+                          {message.isReadOnce && (
+                            <div className="text-xs mt-1 italic">
+                              Read once message
                             </div>
                           )}
+                          
+                          {message.expiresAt && (
+                            <div className="text-xs mt-1 italic">
+                              Expires in {format(new Date(message.expiresAt), 'HH:mm:ss')}
+                            </div>
+                          )}
+                          
+                          <div className={`text-xs mt-1 flex justify-between ${
+                            isOwn ? 'text-blue-200' : 'text-gray-600'
+                          }`}>
+                            <span>{format(new Date(message.timestamp), 'HH:mm')}</span>
+                            {isOwn && (
+                              <span className="ml-2">
+                                {message.read ? '✓✓' : '✓'}
+                              </span>
+                            )}
+                          </div>
                         </div>
+                        
+                        {isOwn && (
+                          <div className="ml-2 flex flex-col justify-end mb-2">
+                            <button
+                              onClick={() => deleteMessage(message)}
+                              disabled={deletingMessages.has(message.messageId || message.id)}
+                              className={`text-xs hover:text-red-500 ${
+                                deletingMessages.has(message.messageId || message.id)
+                                  ? 'text-gray-400 cursor-not-allowed' 
+                                  : 'text-gray-500'
+                              }`}
+                            >
+                              {deletingMessages.has(message.messageId || message.id) 
+                                ? 'Deleting...' 
+                                : 'Delete'}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
