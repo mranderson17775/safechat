@@ -99,7 +99,7 @@ const AdminDashboard: React.FC = () => {
           try {
             const messagesResponse = currentUser?.roles?.includes('ROLE_SUPPORT_ADMIN') || 
                                       currentUser?.roles?.includes('ROLE_SUPER_ADMIN')
-              ? await axios.get('/api/admin/messages')  // New admin-specific endpoint
+              ? await axios.get('/api/messages')  // New admin-specific endpoint
               : await axios.get('/api/messages');       // Original user-specific endpoint
             
             console.log("Raw messages:", messagesResponse.data);
