@@ -385,7 +385,7 @@ const MessagesList: React.FC = () => {
                       isOwn ? 'justify-end' : 'justify-start'
                     }`}
                   >
-                    <div className="flex flex-col">
+                    <div className="flex flex-col max-w-[70%]">
                       <div 
                         className={`text-xs mb-1 ${
                           isOwn ? 'text-right' : 'text-left'
@@ -396,7 +396,7 @@ const MessagesList: React.FC = () => {
                       
                       <div className="flex items-center">
                         <div
-                          className={`max-w-xs p-3 rounded-lg ${
+                          className={`p-3 rounded-lg break-words ${
                             isOwn
                             ? 'bg-blue-500 text-white'
                             : 'bg-gray-300'
@@ -476,6 +476,12 @@ const MessagesList: React.FC = () => {
                       handleTyping();
                       autoResizeTextarea();
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage(e as unknown as React.FormEvent);
+                      }
+                    }}
                     className="w-full border rounded-lg py-2 px-4 mr-2 resize-none overflow-hidden"
                     placeholder="Type a message..."
                     rows={1}
@@ -507,7 +513,7 @@ const MessagesList: React.FC = () => {
                 
                 <button
                   type="submit"
-                  className="bg-blue-500 text-white px-4 py-2 rounded-full"
+                  className="bg-blue-500 text-white px-4 py-2 rounded-full h-full"
                   disabled={newMessage.length > 1000}
                 >
                   Send
