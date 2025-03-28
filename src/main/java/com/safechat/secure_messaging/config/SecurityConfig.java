@@ -133,8 +133,6 @@ public class SecurityConfig {
             // Add CSP headers
             .headers(headers -> headers
                 // XSS protection with proper enum usage
-                .contentTypeOptions().disable() // Disable content type sniffing
-                .frameOptions().deny() // Prevent clickjacking
                 .httpStrictTransportSecurity(hsts -> hsts
                     .includeSubDomains(true)
                     .maxAgeInSeconds(31536000) // Force HTTPS for 1 year
@@ -171,7 +169,8 @@ public class SecurityConfig {
             "http://localhost:3000", 
             "https://localhost:3000",
             "ws://localhost:3000",
-            "wss://localhost:3000"
+            "wss://localhost:3000",
+            "https://safechat-production.up.railway.app/"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
