@@ -23,6 +23,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -31,7 +33,7 @@ import java.util.*;
 @RequestMapping("/api/admin")
 @PreAuthorize("hasRole('SUPPORT_ADMIN') or hasRole('SUPER_ADMIN')")
 public class AdminController {
-
+    private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
     @Autowired
     private UserRepository userRepository;
 
@@ -59,7 +61,6 @@ public class AdminController {
         private boolean twoFactorEnabled;
         private String twoFactorMethod;
         private String phoneNumber;
-
         // Getters and setters
         public String getUsername() {
             return username;
@@ -349,13 +350,15 @@ public class AdminController {
 
     @DeleteMapping("/users/{userId}")
     public ResponseEntity<?> deleteUser(@PathVariable UUID userId) {
+        // Create a static final logger for the current class
+    
         try {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
-            
+           
             // Get the current admin for authorization and audit log
             User currentAdmin = getCurrentAdmin();
-            
+           
             // Check if attempting to delete a super admin
             if (user.getRoles().contains(UserRoles.ROLE_SUPER_ADMIN)) {
                 // Only another super admin can delete a super admin
@@ -364,23 +367,24 @@ public class AdminController {
                             .body(Map.of("error", "Cannot delete a super admin user"));
                 }
             }
-            
+           
             // Store username for audit log
             String username = user.getUsername();
-            
+           
             // Handle all dependencies in order
             // 1. Delete messages related to this user
             messageRepository.deleteByReceiverIdOrSenderIdOrRevokedBy(userId, userId, user);
-            
-            // 2. Delete audit logs for this user
+           
+            // 2. Delete audit logs for this user (modify based on your actual audit log repository)
             auditLogRepository.deleteById(userId);
-            
-            // 3. Delete user roles
-            userRepository.deleteById(userId);
-            
+           
+            // 3. Remove user roles
+            user.getRoles().clear();
+            userRepository.save(user);
+           
             // 4. Finally delete the user
-            userRepository.deleteById(userId);
-            
+            userRepository.delete(user);
+           
             // Create a new audit log entry for the deletion
             AuditLog log = new AuditLog();
             log.setUser(currentAdmin);
@@ -388,18 +392,18 @@ public class AdminController {
             log.setDetails("Admin deleted user: " + username);
             log.setTimestamp(LocalDateTime.now());
             auditLogRepository.save(log);
-            
+           
             return ResponseEntity.ok(Map.of(
                     "deleted", true,
                     "userId", userId
             ));
         } catch (Exception e) {
-            e.printStackTrace();
+            // Proper logging using SLF4J
+            logger.error("Failed to delete user", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to delete user: " + e.getMessage()));
+                    .body(Map.of("error", "Failed to delete user", "details", e.getMessage()));
         }
     }
-
 
     // Message moderation DTO
     public static class MessageModerationRequest {

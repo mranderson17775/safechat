@@ -221,32 +221,38 @@ const AdminDashboard: React.FC = () => {
 
   // Delete user
   const handleDeleteUser = async (userId: string, userRoles: string[]) => {
-    // Prevent deletion of super admin
-    if (userRoles.includes('ROLE_SUPER_ADMIN')) {
-      setError('Cannot delete super admin.');
-      return;
-    }
-
-    // Check if current user is a super admin (can delete anyone)
-    const isSuperAdmin = currentUser?.roles?.includes('ROLE_SUPER_ADMIN');
-    
-    // Check if the user to be deleted is an admin
-    const isAdminUser = userRoles.includes('ROLE_SUPPORT_ADMIN');
-
-    // If current user is not a super admin and trying to delete an admin
-    if (isAdminUser && !isSuperAdmin) {
-      setError('Only a Super Admin can delete other administrators.');
-      return;
-    }
-
     try {
-      await axios.delete(`/api/admin/users/${userId}`);
-      setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
-      // Refresh audit logs after the action
-      await fetchAuditLogs();
+      const response = await axios.delete(`/api/admin/users/${userId}`);
+      
+      if (response.data.deleted) {
+        // Successfully deleted
+        setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
+        await fetchAuditLogs();
+      } else {
+        // Handle unexpected response
+        setError(response.data.error || 'Failed to delete user');
+      }
     } catch (error) {
       console.error('Error deleting user:', error);
-      setError('Failed to delete user');
+      
+      // Type-safe error handling
+      if (error instanceof AxiosError) {
+        // Handle Axios-specific errors
+        if (error.response) {
+          // The request was made and the server responded with a status code
+          // that falls out of the range of 2xx
+          setError(error.response.data.error || 'Failed to delete user');
+        } else if (error.request) {
+          // The request was made but no response was received
+          setError('No response received from server');
+        } else {
+          // Something happened in setting up the request that triggered an Error
+          setError('Error setting up the request');
+        }
+      } else {
+        // Handle generic errors
+        setError('An unexpected error occurred');
+      }
     }
   };
 
