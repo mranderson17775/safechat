@@ -1,7 +1,11 @@
 package com.safechat.secure_messaging.repository;
 import com.safechat.secure_messaging.model.AuditLog;
 import com.safechat.secure_messaging.model.User;
+
+import jakarta.transaction.Transactional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -30,5 +34,8 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate);
 
-            void deleteByUserId(UUID userId);
+            @Modifying
+            @Transactional
+            @Query(value = "UPDATE audit_logs SET user_id = NULL WHERE user_id = :userId", nativeQuery = true)
+            void removeUserReferences(@Param("userId") UUID userId);
 }

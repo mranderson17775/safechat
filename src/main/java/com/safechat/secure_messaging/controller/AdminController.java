@@ -352,10 +352,10 @@ public class AdminController {
         try {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
-            
+           
             // Get the current admin for authorization and audit log
             User currentAdmin = getCurrentAdmin();
-            
+           
             // Check if attempting to delete a super admin
             if (user.getRoles().contains(UserRoles.ROLE_SUPER_ADMIN)) {
                 // Only another super admin can delete a super admin
@@ -364,21 +364,20 @@ public class AdminController {
                             .body(Map.of("error", "Cannot delete a super admin user"));
                 }
             }
-            
+           
             // Store username for audit log
             String username = user.getUsername();
-            
+           
             // Handle all dependencies in order
             // 1. Delete messages related to this user
             messageRepository.deleteByReceiverIdOrSenderIdOrRevokedBy(userId, userId, user);
-            
-            // 2. Delete audit logs for this user
-            auditLogRepository.deleteById(userId);
-            
-            // 3. Delete user roles
+           
+            // 2. Update audit logs to remove user reference before deletion
+            auditLogRepository.removeUserReferences(userId);
+           
+            // 3. Delete user
             userRepository.deleteById(userId);
-            
-            
+           
             // Create a new audit log entry for the deletion
             AuditLog log = new AuditLog();
             log.setUser(currentAdmin);
@@ -386,7 +385,7 @@ public class AdminController {
             log.setDetails("Admin deleted user: " + username);
             log.setTimestamp(LocalDateTime.now());
             auditLogRepository.save(log);
-            
+           
             return ResponseEntity.ok(Map.of(
                     "deleted", true,
                     "userId", userId
