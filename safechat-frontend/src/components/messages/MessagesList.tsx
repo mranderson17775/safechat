@@ -366,89 +366,88 @@ const MessagesList: React.FC = () => {
               </h2>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4">
-              {messages.map((message) => {
-                const isOwn = 
-                  message.senderUsername || 
-                  users.find(u => u.id === message.senderId)?.username || 
-                  (message.senderId === currentUser?.id ? currentUser.username : `Unknown User (ID: ${message.senderId.slice(0, 8)})`);
-                
-                const senderName = 
-                  message.senderUsername || 
-                  users.find(u => u.id === message.senderId)?.username || 
-                  (message.senderId === currentUser?.id ? currentUser.username : `Unknown User (ID: ${message.senderId.slice(0, 8)})`);
-
+            <div className="max-w-full flex flex-col items-stretch space-y-2">
+          {messages.map((message) => {
+            const isOwn = 
+              message.senderUsername || 
+              users.find(u => u.id === message.senderId)?.username || 
+              (message.senderId === currentUser?.id ? currentUser.username : `Unknown User (ID: ${message.senderId.slice(0, 8)})`);
+            
+            const senderName = 
+              message.senderUsername || 
+              users.find(u => u.id === message.senderId)?.username || 
+              (message.senderId === currentUser?.id ? currentUser.username : `Unknown User (ID: ${message.senderId.slice(0, 8)})`);
                 return (
                   <div
-                    key={message.id}
-                    className={`mb-4 flex ${
-                      isOwn ? 'justify-end' : 'justify-start'
-                    }`}
-                  >
-                    <div className="flex flex-col max-w-[70%]">
-                      <div 
-                        className={`text-xs mb-1 ${
-                          isOwn ? 'text-right' : 'text-left'
-                        } ${isOwn ? 'text-blue-700' : 'text-gray-600'}`}
+                  key={message.id}
+                  className={`flex ${
+                    isOwn ? 'justify-end' : 'justify-start'
+                  } w-full`}
+                >
+                  <div className="flex flex-col w-full max-w-[70%]">
+                    <div 
+                      className={`text-xs mb-1 ${
+                        isOwn ? 'text-right' : 'text-left'
+                      } ${isOwn ? 'text-blue-700' : 'text-gray-600'}`}
+                    >
+                      {senderName}
+                    </div>
+                    
+                    <div className="flex items-center w-full">
+                      <div
+                        className={`p-3 rounded-lg break-words w-full ${
+                          isOwn
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-gray-300'
+                        }`}
                       >
-                        {senderName}
-                      </div>
-                      
-                      <div className="flex items-center">
-                        <div
-                          className={`p-3 rounded-lg break-words ${
-                            isOwn
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-gray-300'
-                          }`}
-                        >
-                          <div className="flex items-center">
-                            {message.isEncrypted && (
-                              <span className="mr-1 text-xs">🔒</span>
-                            )}
-                            <div>{message.content}</div>
-                          </div>
-                          
-                          {message.isReadOnce && (
-                            <div className="text-xs mt-1 italic">
-                              Read once message
-                            </div>
+                        <div className="flex items-center">
+                          {message.isEncrypted && (
+                            <span className="mr-1 text-xs">🔒</span>
                           )}
-                          
-                          {message.expiresAt && (
-                            <div className="text-xs mt-1 italic">
-                              Expires in 1m
-                            </div>
-                          )}
-                          
-                          <div className={`text-xs mt-1 flex justify-between ${
-                            isOwn ? 'text-blue-200' : 'text-gray-600'
-                          }`}>
-                            <span>{format(new Date(message.timestamp), 'HH:mm')}</span>
-                            {isOwn && (
-                              <span className="ml-2">
-                                {message.read ? '✓✓' : '✓'}
-                              </span>
-                            )}
-                          </div>
+                          <div>{message.content}</div>
                         </div>
                         
-                        {isOwn && (
-                          <div className="ml-2 flex flex-col justify-end mb-2">
-                            <button
-                              onClick={() => deleteMessage(message)}
-                              disabled={deletingMessages.has(message.messageId || message.id)}
-                              className={`text-xs hover:text-red-500 ${
-                                deletingMessages.has(message.messageId || message.id)
-                                  ? 'text-gray-400 cursor-not-allowed' 
-                                  : 'text-gray-500'
-                              }`}
-                            >
-                              {deletingMessages.has(message.messageId || message.id) 
-                                ? 'Deleting...' 
-                                : 'Delete'}
-                            </button>
+                        {message.isReadOnce && (
+                          <div className="text-xs mt-1 italic">
+                            Read once message
                           </div>
+                        )}
+                        
+                        {message.expiresAt && (
+                          <div className="text-xs mt-1 italic">
+                            Expires in 1m
+                          </div>
+                        )}
+                        
+                        <div className={`text-xs mt-1 flex justify-between ${
+                          isOwn ? 'text-blue-200' : 'text-gray-600'
+                        }`}>
+                          <span>{format(new Date(message.timestamp), 'HH:mm')}</span>
+                          {isOwn && (
+                            <span className="ml-2">
+                              {message.read ? '✓✓' : '✓'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {isOwn && (
+                        <div className="ml-2 flex flex-col justify-end mb-2">
+                          <button
+                            onClick={() => deleteMessage(message)}
+                            disabled={deletingMessages.has(message.messageId || message.id)}
+                            className={`text-xs hover:text-red-500 ${
+                              deletingMessages.has(message.messageId || message.id)
+                                ? 'text-gray-400 cursor-not-allowed' 
+                                : 'text-gray-500'
+                            }`}
+                          >
+                            {deletingMessages.has(message.messageId || message.id) 
+                              ? 'Deleting...' 
+                              : 'Delete'}
+                          </button>
+                        </div>
                         )}
                       </div>
                     </div>
@@ -464,62 +463,62 @@ const MessagesList: React.FC = () => {
               )}
             </div>
 
-            <form onSubmit={sendMessage} className="p-4 border-t">
-              <div className="flex items-center">
-                <div className="flex-1 relative">
-                  <textarea
-                    ref={textareaRef}
-                    value={newMessage}
-                    onChange={(e) => {
-                      const truncatedMessage = e.target.value.slice(0, 1000);
-                      setNewMessage(truncatedMessage);
-                      handleTyping();
-                      autoResizeTextarea();
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        sendMessage(e as unknown as React.FormEvent);
-                      }
-                    }}
-                    className="w-full border rounded-lg py-2 px-4 mr-2 resize-none overflow-hidden"
-                    placeholder="Type a message..."
-                    rows={1}
-                  />
-                  {messageError && (
-                    <div className="absolute text-red-500 text-xs mt-1">
-                      {messageError}
-                    </div>
-                  )}
-                  {newMessage.length > 0 && (
-                    <div className="absolute right-4 bottom-2 text-xs text-gray-500">
-                      {newMessage.length}/1000
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex items-center mr-2">
-                  <input
-                    type="checkbox"
-                    id="expiration-toggle"
-                    checked={useExpiration}
-                    onChange={() => setUseExpiration(!useExpiration)}
-                    className="mr-1"
-                  />
-                  <label htmlFor="expiration-toggle" className="text-xs text-gray-600">
-                    1m Expiry
-                  </label>
-                </div>
-                
-                <button
-                  type="submit"
-                  className="bg-blue-500 text-white px-4 py-2 rounded-full h-full"
-                  disabled={newMessage.length > 1000}
-                >
-                  Send
-                </button>
+                      <form onSubmit={sendMessage} className="p-4 border-t">
+            <div className="flex items-center">
+              <div className="flex-1 relative">
+                <textarea
+                  ref={textareaRef}
+                  value={newMessage}
+                  onChange={(e) => {
+                    const truncatedMessage = e.target.value.slice(0, 1000);
+                    setNewMessage(truncatedMessage);
+                    handleTyping();
+                    autoResizeTextarea();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage(e as unknown as React.FormEvent);
+                    }
+                  }}
+                  className="w-full border rounded-lg py-2 px-4 mr-2 resize-none overflow-hidden"
+                  placeholder="Type a message..."
+                  rows={1}
+                />
+                {messageError && (
+                  <div className="absolute text-red-500 text-xs mt-1">
+                    {messageError}
+                  </div>
+                )}
+                {newMessage.length > 0 && (
+                  <div className="absolute right-4 bottom-2 text-xs text-gray-500">
+                    {newMessage.length}/1000
+                  </div>
+                )}
               </div>
-            </form>
+              
+              <div className="flex items-center mr-2">
+                <input
+                  type="checkbox"
+                  id="expiration-toggle"
+                  checked={useExpiration}
+                  onChange={() => setUseExpiration(!useExpiration)}
+                  className="mr-1"
+                />
+                <label htmlFor="expiration-toggle" className="text-xs text-gray-600">
+                  1m Expiry
+                </label>
+              </div>
+              
+              <button
+                type="submit"
+                className="bg-blue-500 text-white px-4 py-2 rounded-full h-full w-full max-w-[100px]"
+                disabled={newMessage.length > 1000}
+              >
+                Send
+              </button>
+            </div>
+          </form>
           </>
         ) : (
           <div className="text-center">Select a contact to start chatting</div>
