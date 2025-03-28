@@ -32,6 +32,7 @@ const UserProfilePage: React.FC = () => {
 
   // State for 2FA
   const [showTwoFactorSetup, setShowTwoFactorSetup] = useState(false);
+  const [showTwoFactorDisableVerification, setShowTwoFactorDisableVerification] = useState(false);
   const [method, setMethod] = useState<TwoFactorMethod>('TOTP');
   const [verificationCode, setVerificationCode] = useState('');
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -39,6 +40,7 @@ const UserProfilePage: React.FC = () => {
   // Resend code state
   const [resendLoading, setResendLoading] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
+  const [availableMethods, setAvailableMethods] = useState<TwoFactorMethod[]>(['TOTP', 'EMAIL']);
 
   // React Hook Form setup
   const {
@@ -159,7 +161,7 @@ const UserProfilePage: React.FC = () => {
     }
   };
 
-  // Handle resend 2FA code
+  // Handle resend 2FA code for setup
   const handleResendCode = async () => {
     setResendLoading(true);
     setResendSuccess(false);
@@ -187,30 +189,62 @@ const UserProfilePage: React.FC = () => {
     setResendLoading(false);
   };
 
-  // Disable 2FA
-  const disableTwoFactorAuth = async () => {
-    if (!window.confirm('Are you sure you want to disable two-factor authentication?')) {
-      return;
-    }
+  // Show disable 2FA verification modal
+  const showDisableTwoFactorVerification = () => {
+    setShowTwoFactorDisableVerification(true);
+    setMethod('TOTP'); // Default to TOTP method
+    setVerificationCode('');
+    setError(null);
+  };
 
+  // Verify and disable 2FA
+  const verifyAndDisableTwoFactorAuth = async () => {
     try {
       setError(null);
-      setSuccessMessage(null);
 
+      // Verify the code before disabling 2FA
+      await api.post('/auth/2fa/verify', { 
+        code: verificationCode,
+        username: user?.username,
+        method: method
+      });
+
+      // If verification is successful, proceed to disable 2FA
       const response = await api.post('/user/2fa/disable', { 
         username: user?.username 
       });
 
-      // Update user state - use response data to ensure type compatibility
+      // Update user state
       setUser((prev) => prev ? {
         ...prev, 
         twoFactorEnabled: false,
         twoFactorQrCode: null
       } : null);
 
+      setShowTwoFactorDisableVerification(false);
       setSuccessMessage(response.data.message || 'Two-factor authentication disabled');
     } catch (err: any) {
-      setError('Failed to disable two-factor authentication');
+      setError(err.response?.data?.message || 'Verification failed. Unable to disable two-factor authentication.');
+    }
+  };
+
+  // Handle method change for 2FA verification
+  const handleMethodChange = async (newMethod: TwoFactorMethod) => {
+    setMethod(newMethod);
+    setVerificationCode('');
+    setError(null);
+
+    // If switching to EMAIL, request a new verification code
+    if (newMethod === 'EMAIL') {
+      try {
+        await api.post('/auth/resend', { 
+          username: user?.username, 
+          method: 'EMAIL' 
+        });
+        setSuccessMessage('Verification code sent to your email');
+      } catch (err: any) {
+        setError('Failed to send verification code');
+      }
     }
   };
 
@@ -298,9 +332,10 @@ const UserProfilePage: React.FC = () => {
         {!user?.twoFactorEnabled ? (
           <button onClick={enableTwoFactorAuth}>Enable 2FA</button>
         ) : (
-          <button onClick={disableTwoFactorAuth}>Disable 2FA</button>
+          <button onClick={showDisableTwoFactorVerification}>Disable 2FA</button>
         )}
 
+        {/* Two-Factor Setup Modal */}
         {showTwoFactorSetup && (
           <div className="two-factor-setup">
             {qrCode && (
@@ -337,6 +372,57 @@ const UserProfilePage: React.FC = () => {
                 <span className="success-message">New QR Code generated!</span>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Two-Factor Disable Verification Modal */}
+        {showTwoFactorDisableVerification && (
+          <div className="two-factor-disable-verification">
+            <h3>Verify to Disable Two-Factor Authentication</h3>
+            
+            {/* Method selection */}
+            <div className="method-tabs">
+              {availableMethods.map(availableMethod => (
+                <button
+                  key={availableMethod}
+                  type="button"
+                  className={`method-tab ${method === availableMethod ? 'active' : ''}`}
+                  onClick={() => handleMethodChange(availableMethod)}
+                >
+                  {availableMethod === 'TOTP' ? 'Authenticator App' : 'Email'}
+                </button>
+              ))}
+            </div>
+
+            {/* Verification input */}
+            <div className="verification-form">
+              <input
+                type="text"
+                placeholder={method === 'TOTP' 
+                  ? 'Enter 6-digit code from app' 
+                  : 'Enter code sent to your email'}
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value)}
+                maxLength={method === 'TOTP' ? 6 : undefined}
+              />
+              <button onClick={verifyAndDisableTwoFactorAuth}>
+                Verify & Disable 2FA
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setShowTwoFactorDisableVerification(false)}
+                className="cancel-button"
+              >
+                Cancel
+              </button>
+            </div>
+
+            {/* Helper text */}
+            <p className="method-info">
+              {method === 'TOTP' 
+                ? 'Open your authenticator app and enter the current 6-digit code.'
+                : 'Check your email for the verification code.'}
+            </p>
           </div>
         )}
       </div>
