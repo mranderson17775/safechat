@@ -4,10 +4,9 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-import io.github.cdimascio.dotenv.Dotenv;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
-
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
@@ -18,10 +17,11 @@ import java.util.stream.Collectors;
 
 @Component
 public class JwtUtils {
+    @Value("${jwt.secret}")
+    private String secret;
 
-    private final Dotenv dotenv = Dotenv.configure().directory("./").ignoreIfMissing().load();
-    private final String secret = dotenv.get("JWT_SECRET", "default_jwt_secret_with_32_chars_!!!");
-    private final long expiration = Long.parseLong(dotenv.get("JWT_EXPIRATION", "86400000"));
+    @Value("${jwt.expiration}")
+    private long expiration;
 
     private Key getSigningKey() {
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);

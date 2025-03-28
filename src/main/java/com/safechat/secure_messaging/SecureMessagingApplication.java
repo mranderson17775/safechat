@@ -1,20 +1,18 @@
 package com.safechat.secure_messaging;
 
-import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
+@ComponentScan(basePackages = {
+    "com.safechat.secure_messaging",
+    "com.safechat.secure_messaging.security",
+    "com.safechat.secure_messaging.config",
+    "com.safechat.secure_messaging.repository"
+})
 public class SecureMessagingApplication {
     public static void main(String[] args) {
-        // Load environment variables from .env file
-        Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
-        
-        // Set each environment variable as a system property
-        dotenv.entries().forEach(entry -> {
-            System.setProperty(entry.getKey(), entry.getValue());
-        });
-        
         SpringApplication.run(SecureMessagingApplication.class, args);
     }
 }
