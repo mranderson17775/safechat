@@ -53,6 +53,10 @@ public class Message {
     @JoinColumn(name = "revoked_by_id")
     private User revokedBy;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
     @Column
     private String iv; // Initialization Vector (IV) for encryption
     

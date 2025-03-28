@@ -358,14 +358,14 @@ public class AdminController {
     }
 
     @DeleteMapping("/users/{userId}")
-    @Transactional // Add this annotation
+    @Transactional
     public ResponseEntity<?> deleteUser(@PathVariable UUID userId) {
         try {
             // First, check if user exists
             User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
             
-            // Manually handle related entities before deletion
+            // Delete related entities
             messageRepository.deleteByUser(user);
             auditLogRepository.deleteByUser(user);
             
