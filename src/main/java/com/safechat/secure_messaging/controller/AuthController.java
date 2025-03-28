@@ -273,6 +273,7 @@ public class AuthController {
             
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Two-factor authentication has been disabled");
+            response.put("qrCodeImage", null);  // Explicitly set QR code to null
             
             return ResponseEntity.ok(response);
         } catch (UsernameNotFoundException e) {

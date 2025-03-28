@@ -18,6 +18,7 @@ type UserType = {
   username: string;
   email: string;
   twoFactorEnabled: boolean;
+  twoFactorQrCode?: string | null;
 };
 
 type TwoFactorMethod = 'EMAIL' | 'TOTP';
@@ -31,8 +32,9 @@ const UserProfilePage: React.FC = () => {
 
   // State for 2FA
   const [showTwoFactorSetup, setShowTwoFactorSetup] = useState(false);
-  const [method, setMethod] = useState<TwoFactorMethod>('EMAIL');
+  const [method, setMethod] = useState<TwoFactorMethod>('TOTP');
   const [verificationCode, setVerificationCode] = useState('');
+  const [qrCode, setQrCode] = useState<string | null>(null);
   
   // Resend code state
   const [resendLoading, setResendLoading] = useState(false);
@@ -86,7 +88,7 @@ const UserProfilePage: React.FC = () => {
       setSuccessMessage('Profile updated successfully');
 
       // Update local user state
-      setUser((prev) => (prev ? { ...prev, ...data } : prev));
+      setUser((prev) => prev ? { ...prev, ...data } : null);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to update profile');
     }
@@ -114,17 +116,17 @@ const UserProfilePage: React.FC = () => {
     }
   };
 
-  // Enable 2FA with email by default
+  // Enable 2FA
   const enableTwoFactorAuth = async () => {
     try {
       setError(null);
       setSuccessMessage(null);
 
-      // Specify EMAIL as the method
-      const response = await api.post('/auth/2fa/setup', { method: 'EMAIL' });
+      // Request 2FA setup with TOTP method to get QR code
+      const response = await api.post('/auth/2fa/setup', { method: 'TOTP' });
       
-      // Email will be sent automatically by the backend
-      setSuccessMessage('A verification code has been sent to your email');
+      // Set QR code from response
+      setQrCode(response.data.qrCodeImage);
       setShowTwoFactorSetup(true);
     } catch (err: any) {
       setError('Failed to initialize 2FA setup');
@@ -136,16 +138,21 @@ const UserProfilePage: React.FC = () => {
     try {
       setError(null);
 
-      await api.post('/auth/2fa/verify', { 
+      const response = await api.post('/auth/2fa/verify', { 
         code: verificationCode,
         username: user?.username,
-        method: 'EMAIL'
+        method: 'TOTP'
       });
 
-      // Update user state
-      setUser((prev) => (prev ? { ...prev, twoFactorEnabled: true } : prev));
+      // Update user state - use response data to ensure type compatibility
+      setUser((prev) => prev ? {
+        ...prev, 
+        twoFactorEnabled: true,
+        twoFactorQrCode: response.data.qrCodeImage || null
+      } : null);
 
       setShowTwoFactorSetup(false);
+      setQrCode(null);
       setSuccessMessage('Two-factor authentication enabled successfully');
     } catch (err: any) {
       setError('Invalid verification code');
@@ -154,25 +161,17 @@ const UserProfilePage: React.FC = () => {
 
   // Handle resend 2FA code
   const handleResendCode = async () => {
-    if (method !== 'EMAIL') {
-      return;
-    }
- 
     setResendLoading(true);
     setResendSuccess(false);
     setError('');
  
     try {
-      // Include all required fields, even if code is empty
-      const response = await api.post(
-        '/auth/resend',
-        {
-          username: user?.username,
-          method: 'EMAIL',
-          code: '' // Include this even if it's empty
-        }
-      );
-     
+      // Re-initiate 2FA setup to get a new QR code
+      const response = await api.post('/auth/2fa/setup', { method: 'TOTP' });
+      
+      // Update QR code
+      setQrCode(response.data.qrCodeImage);
+      
       setResendSuccess(true);
       setTimeout(() => {
         setResendSuccess(false);
@@ -198,12 +197,18 @@ const UserProfilePage: React.FC = () => {
       setError(null);
       setSuccessMessage(null);
 
-      await api.post('/user/2fa/disable');
+      const response = await api.post('/user/2fa/disable', { 
+        username: user?.username 
+      });
 
-      // Update user state
-      setUser((prev) => (prev ? { ...prev, twoFactorEnabled: false } : prev));
+      // Update user state - use response data to ensure type compatibility
+      setUser((prev) => prev ? {
+        ...prev, 
+        twoFactorEnabled: false,
+        twoFactorQrCode: null
+      } : null);
 
-      setSuccessMessage('Two-factor authentication disabled');
+      setSuccessMessage(response.data.message || 'Two-factor authentication disabled');
     } catch (err: any) {
       setError('Failed to disable two-factor authentication');
     }
@@ -298,7 +303,16 @@ const UserProfilePage: React.FC = () => {
 
         {showTwoFactorSetup && (
           <div className="two-factor-setup">
-            <p>A verification code has been sent to your email.</p>
+            {qrCode && (
+              <div className="qr-code-container">
+                <p>Scan this QR code with your authenticator app:</p>
+                <img 
+                  src={qrCode} 
+                  alt="Two-Factor Authentication QR Code" 
+                  className="qr-code-image" 
+                />
+              </div>
+            )}
             
             <div className="verification-form">
               <input
@@ -316,11 +330,11 @@ const UserProfilePage: React.FC = () => {
                 disabled={resendLoading}
                 className="resend-button"
               >
-                {resendLoading ? 'Sending...' : 'Resend Code'}
+                {resendLoading ? 'Generating New QR...' : 'Generate New QR Code'}
               </button>
               
               {resendSuccess && (
-                <span className="success-message">Code sent successfully!</span>
+                <span className="success-message">New QR Code generated!</span>
               )}
             </div>
           </div>
