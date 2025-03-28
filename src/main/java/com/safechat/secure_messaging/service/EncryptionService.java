@@ -19,32 +19,34 @@ import java.util.UUID;
 @Service
 public class EncryptionService {
     private final KeyRepository keyRepository;
+    
+    // Cache to avoid frequent DB lookups
+    private final Map<String, SecretKey> keyCache = new HashMap<>();
+    
+    private static final String ALGORITHM = "AES/GCM/NoPadding";
+    private static final int GCM_TAG_LENGTH = 128;
+    
+    // Load the master encryption key from environment variables using Spring's @Value
     private final SecretKey masterKey;
     
+    // Constructor with dependency injection
     public EncryptionService(
         KeyRepository keyRepository, 
         @Value("${ENCRYPTION_KEY}") String masterKeyStr
     ) {
         this.keyRepository = keyRepository;
         
+        // Validate master key
+        if (masterKeyStr == null || masterKeyStr.trim().isEmpty()) {
+            throw new RuntimeException("ENCRYPTION_KEY must be provided in environment variables");
+        }
+        
         try {
-            // More comprehensive key validation
-            if (masterKeyStr == null || masterKeyStr.trim().isEmpty()) {
-                throw new IllegalArgumentException("ENCRYPTION_KEY must be a non-empty Base64 encoded 256-bit AES key");
-            }
-            
+            // Initialize the master key from environment variable
             byte[] keyBytes = Base64.getDecoder().decode(masterKeyStr);
-            
-            // Additional key length validation
-            if (keyBytes.length != 32) {  // 256 bits = 32 bytes
-                throw new IllegalArgumentException("Invalid key length. Must be 256 bits (32 bytes)");
-            }
-            
             this.masterKey = new SecretKeySpec(keyBytes, "AES");
         } catch (IllegalArgumentException e) {
-            // Log the specific error
-            System.err.println("Master Key Initialization Error: " + e.getMessage());
-            throw new RuntimeException("Failed to initialize master encryption key", e);
+            throw new RuntimeException("Invalid ENCRYPTION_KEY format. Must be Base64 encoded", e);
         }
     }
     
