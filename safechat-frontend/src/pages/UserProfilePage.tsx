@@ -213,7 +213,7 @@ const UserProfilePage: React.FC = () => {
     setError('');
   
     try {
-      const response = await api.post(
+      await api.post(
         '/auth/resend', 
         { 
           username: user?.username, 
@@ -289,8 +289,73 @@ const UserProfilePage: React.FC = () => {
 
   return (
     <div className="user-profile-container">
-      {/* Previous sections remain the same */}
-      
+      <h1>Account Settings</h1>
+
+      {error && <div className="error-alert">{error}</div>}
+      {successMessage && <div className="success-alert">{successMessage}</div>}
+
+      <div className="profile-section">
+        <h2>Profile Information</h2>
+        <form onSubmit={handleProfileSubmit(onProfileSubmit)}>
+          <div className="form-group">
+            <label htmlFor="username">Username</label>
+            <input id="username" type="text" {...registerProfile('username', { required: 'Username is required' })} />
+            {profileErrors.username && <span className="error-message">{profileErrors.username.message}</span>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="email">Email</label>
+            <input id="email" type="email" {...registerProfile('email', { required: 'Email is required' })} />
+            {profileErrors.email && <span className="error-message">{profileErrors.email.message}</span>}
+          </div>
+
+          <button type="submit">Update Profile</button>
+        </form>
+      </div>
+
+      <div className="password-section">
+        <h2>Change Password</h2>
+        <form onSubmit={handlePasswordSubmit(onPasswordSubmit)}>
+          <div className="form-group">
+            <label htmlFor="currentPassword">Current Password</label>
+            <input 
+              id="currentPassword" 
+              type="password" 
+              {...registerPassword('currentPassword', { required: 'Current password is required' })} 
+            />
+            {passwordErrors.currentPassword && <span className="error-message">{passwordErrors.currentPassword.message}</span>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="newPassword">New Password</label>
+            <input 
+              id="newPassword" 
+              type="password" 
+              {...registerPassword('newPassword', { 
+                required: 'New password is required',
+                minLength: { value: 1, message: 'Password must be at least 1 characters long' } 
+              })} 
+            />
+            {passwordErrors.newPassword && <span className="error-message">{passwordErrors.newPassword.message}</span>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="confirmPassword">Confirm New Password</label>
+            <input 
+              id="confirmPassword" 
+              type="password" 
+              {...registerPassword('confirmPassword', { 
+                required: 'Please confirm your password',
+                validate: value => value === newPassword || 'Passwords do not match'
+              })} 
+            />
+            {passwordErrors.confirmPassword && <span className="error-message">{passwordErrors.confirmPassword.message}</span>}
+          </div>
+
+          <button type="submit">Change Password</button>
+        </form>
+      </div>
+
       <div className="security-section">
         <h2>Two-Factor Authentication</h2>
         <p>
