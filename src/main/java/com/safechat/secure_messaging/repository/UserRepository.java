@@ -27,11 +27,11 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     List<User> findByRoles(String role);
 
     void deleteById(@SuppressWarnings("null") UUID id);
-   @Modifying
-    @Query("DELETE FROM Message m WHERE m.sender = :user OR m.receiver = :user OR m.user = :user")
-    void deleteMessagesByUser(@Param("user") User user);
+    @Modifying
+    @Query("DELETE FROM Message m WHERE m.sender.id = :userId OR m.receiver.id = :userId")
+    void forceDeleteMessages(@Param("userId") UUID userId);
 
     @Modifying
-    @Query("DELETE FROM AuditLog a WHERE a.user = :user")
-    void deleteAuditLogsByUser(@Param("user") User user);
+    @Query("DELETE FROM AuditLog a WHERE a.user.id = :userId")
+    void forceDeleteAuditLogs(@Param("userId") UUID userId);
 }

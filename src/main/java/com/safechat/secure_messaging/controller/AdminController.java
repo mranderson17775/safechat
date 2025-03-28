@@ -359,37 +359,42 @@ public class AdminController {
 
     @DeleteMapping("/users/{userId}")
     @Transactional
-    public ResponseEntity<?> deleteUser(@PathVariable UUID userId) {
+    public ResponseEntity<?> forceDeleteUser(@PathVariable UUID userId) {
         try {
-            // First, check if user exists
+            // Find the user first
             User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
             
-            // Delete related entities 
-            // Note the order is important to avoid foreign key constraint violations
-            userRepository.deleteMessagesByUser(user);
-            userRepository.deleteAuditLogsByUser(user);
+            // Log who is performing the deletion
+            User currentAdmin = getCurrentAdmin();
             
-            // Then delete the user
+            // Force delete related entities
+            userRepository.forceDeleteMessages(userId);
+            userRepository.forceDeleteAuditLogs(userId);
+            
+            // Additional cleanup queries can be added here if needed
+            
+            // Actually delete the user
             userRepository.delete(user);
-            userRepository.flush(); // Ensure immediate database sync
+            userRepository.flush();
             
-            // Log deletion action
+            // Create an audit log of the deletion
             AuditLog log = new AuditLog();
-            log.setUser(getCurrentAdmin());
-            log.setAction("USER_DELETED");
-            log.setDetails("Deleted user: " + user.getUsername());
+            log.setUser(currentAdmin);
+            log.setAction("USER_FORCE_DELETED");
+            log.setDetails("Force deleted user: " + user.getUsername() + " by admin: " + currentAdmin.getUsername());
             log.setTimestamp(LocalDateTime.now());
             auditLogRepository.save(log);
             
             return ResponseEntity.ok(Map.of(
                 "deleted", true,
-                "userId", userId
+                "userId", userId,
+                "message", "User and all associated data have been permanently removed"
             ));
         } catch (Exception e) {
-            logger.error("Error deleting user", e);
+            logger.error("Error force deleting user", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Failed to delete user: " + e.getMessage()));
+                .body(Map.of("error", "Failed to force delete user: " + e.getMessage()));
         }
     }
 
