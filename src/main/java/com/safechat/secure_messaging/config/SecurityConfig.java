@@ -168,9 +168,12 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(Arrays.asList(
             "http://localhost:3000", 
             "https://localhost:3000",
+            "https://localhost:8443",  // Add this line
             "ws://localhost:3000",
             "wss://localhost:3000",
-             "https://safechat-production.up.railway.app"
+            "ws://localhost:8443",     // Add WebSocket variant
+            "wss://localhost:8443",    // Add secure WebSocket variant
+            "https://safechat-production.up.railway.app"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));

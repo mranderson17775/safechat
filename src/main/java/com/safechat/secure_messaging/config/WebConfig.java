@@ -53,7 +53,8 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/**")
             .allowedOrigins(
                 "https://safechat-production.up.railway.app", 
-                "http://localhost:3000", 
+                "http://localhost:3000",
+                "https://localhost:8443", 
                 "https://localhost:3000"
             )
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
