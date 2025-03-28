@@ -297,7 +297,7 @@ public class MessageController {
                         }
                         responses.add(new MessageResponse(message, decryptedContent));
                     } catch (Exception e) {
-                        responses.add(new MessageResponse(message, "[Unable to decrypt message]"));
+                        responses.add(new MessageResponse(message, "[Message Revoked by Admin]"));
                     }
                 }
 
