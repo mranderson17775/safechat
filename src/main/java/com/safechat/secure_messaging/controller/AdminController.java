@@ -10,10 +10,13 @@ import com.safechat.secure_messaging.repository.MessageRepository;
 import com.safechat.secure_messaging.repository.UserRepository;
 import com.safechat.secure_messaging.service.MessageExpirationService;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PersistenceContext;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -51,7 +54,12 @@ public class AdminController {
 
     @PersistenceContext
     private EntityManager entityManager;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Message> messages = new ArrayList<>();
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AuditLog> auditLogs = new ArrayList<>();
+    
     // User management DTOs
     public static class UserCreationRequest {
         private String username;
@@ -350,58 +358,19 @@ public class AdminController {
 
     @DeleteMapping("/users/{userId}")
     public ResponseEntity<?> deleteUser(@PathVariable UUID userId) {
-        // Create a static final logger for the current class
-    
         try {
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-           
-            // Get the current admin for authorization and audit log
-            User currentAdmin = getCurrentAdmin();
-           
-            // Check if attempting to delete a super admin
-            if (user.getRoles().contains(UserRoles.ROLE_SUPER_ADMIN)) {
-                // Only another super admin can delete a super admin
-                if (!currentAdmin.getRoles().contains(UserRoles.ROLE_SUPER_ADMIN)) {
-                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                            .body(Map.of("error", "Cannot delete a super admin user"));
-                }
-            }
-           
-            // Store username for audit log
-            String username = user.getUsername();
-           
-            // Handle all dependencies in order
-            // 1. Delete messages related to this user
-            messageRepository.deleteByReceiverIdOrSenderIdOrRevokedBy(userId, userId, user);
-           
-            // 2. Delete audit logs for this user (modify based on your actual audit log repository)
-            auditLogRepository.deleteById(userId);
-           
-            // 3. Remove user roles
-            user.getRoles().clear();
-            userRepository.save(user);
-           
-            // 4. Finally delete the user
-            userRepository.delete(user);
-           
-            // Create a new audit log entry for the deletion
-            AuditLog log = new AuditLog();
-            log.setUser(currentAdmin);
-            log.setAction("USER_DELETED");
-            log.setDetails("Admin deleted user: " + username);
-            log.setTimestamp(LocalDateTime.now());
-            auditLogRepository.save(log);
-           
+            // Simple deletion with built-in cascade
+            userRepository.deleteById(userId);
+            
             return ResponseEntity.ok(Map.of(
-                    "deleted", true,
-                    "userId", userId
+                "deleted", true,
+                "userId", userId
             ));
+        } catch (EmptyResultDataAccessException e) {
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            // Proper logging using SLF4J
-            logger.error("Failed to delete user", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to delete user", "details", e.getMessage()));
+                .body(Map.of("error", "Failed to delete user"));
         }
     }
 
