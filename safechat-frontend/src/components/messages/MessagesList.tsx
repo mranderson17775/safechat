@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import axios from 'api/axios';
-import { format } from 'date-fns';
+import { format, addMinutes } from 'date-fns';
 import { RootState } from 'store';
 
 interface MessageType {
@@ -63,7 +63,7 @@ const MessagesList: React.FC = () => {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 150)}px`; // Max height of 150px
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 300)}px`; // Increased max height to 300px
     }
   };
 
@@ -237,7 +237,8 @@ const MessagesList: React.FC = () => {
       const optimisticMessage = {
         ...response.data,
         senderId: currentUser.id,
-        senderUsername: currentUser.username
+        senderUsername: currentUser.username,
+        expiresAt: useExpiration ? new Date(Date.now() + 60000).toISOString() : undefined
       };
 
       setMessages([...messages, optimisticMessage]);
@@ -386,7 +387,7 @@ const MessagesList: React.FC = () => {
                         isOwn ? 'justify-end' : 'justify-start'
                       } w-full`}
                     >
-                      <div className="flex flex-col w-full max-w-[50%]">
+                      <div className="flex flex-col w-full max-w-[70%]">
                         <div 
                           className={`text-xs mb-1 ${
                             isOwn ? 'text-right' : 'text-left'
@@ -407,7 +408,7 @@ const MessagesList: React.FC = () => {
                               {message.isEncrypted && (
                                 <span className="mr-1 text-xs">🔒</span>
                               )}
-                              <div className="break-words w-full">{message.content}</div>
+                              <div className="break-words w-full whitespace-pre-wrap">{message.content}</div>
                             </div>
                             
                             {message.isReadOnce && (
@@ -486,7 +487,7 @@ const MessagesList: React.FC = () => {
                     }}
                     className="w-full border rounded-lg py-2 px-4 mr-2 resize-none overflow-hidden"
                     placeholder="Type a message..."
-                    rows={1}
+                    rows={4}
                   />
                   {messageError && (
                     <div className="absolute text-red-500 text-xs mt-1">
