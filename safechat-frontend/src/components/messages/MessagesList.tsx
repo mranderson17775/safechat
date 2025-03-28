@@ -388,7 +388,7 @@ const MessagesList: React.FC = () => {
                         isOwn ? 'justify-end' : 'justify-start'
                       } w-full`}
                     >
-                      <div className="flex flex-col w-full max-w-[80%]">
+                        <div className="flex flex-col w-full max-w-[80%] sm:max-w-[70%] md:max-w-[60%] lg:max-w-[50%]">
                         <div 
                           className={`text-xs mb-1 ${
                             isOwn ? 'text-right' : 'text-left'
@@ -403,7 +403,7 @@ const MessagesList: React.FC = () => {
                               isOwn
                               ? 'bg-blue-500 text-white border-blue-600'
                               : 'bg-gray-300 border-gray-400'
-                            }`}
+                            }max-w-[300px] sm:max-w-[400px] md:max-w-[500px] lg:max-w-[600px] break-words whitespace-pre-wrap`}
                           >
                             <div className="flex items-center">
                               {message.isEncrypted && (
