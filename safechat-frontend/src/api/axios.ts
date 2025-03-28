@@ -1,7 +1,7 @@
 // src/api/axios.ts
 import axios from 'axios';
 const instance = axios.create({
-  baseURL: 'https://localhost:8443', // Your Spring Boot server URL
+  baseURL: 'https://safechat-production.up.railway.app', // Your Spring Boot server URL
   headers: {
     'Content-Type': 'application/json',
   },

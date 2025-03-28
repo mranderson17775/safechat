@@ -143,7 +143,7 @@ public class SecurityConfig {
                     "style-src 'self' 'unsafe-inline'; " + // Allow stylesheets from same-origin
                     "img-src 'self' data:; " + // Allow images from same-origin and inline images
                     "font-src 'self' data:; " + // Allow fonts from same-origin
-                    "connect-src 'self' https://localhost:8443 https://safechat-production.up.railway.app https://your-actual-backend-domain.com; " +  // Allow API calls to same-origin
+                    "connect-src 'self' https://safechat-production.up.railway.app;" +  // Allow API calls to same-origin
                     "frame-ancestors 'none'; " + // Prevent embedding in iframes
                     "form-action 'self';" // Restrict form submissions to same-origin
                 ))
@@ -166,14 +166,10 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(
-            "http://localhost:3000", 
-            "https://localhost:3000",
-            "https://localhost:8443",  // Add this line
-            "ws://localhost:3000",
-            "wss://localhost:3000",
-            "ws://localhost:8443",     // Add WebSocket variant
-            "wss://localhost:8443",    // Add secure WebSocket variant
-            "https://safechat-production.up.railway.app"
+            "https://safechat-production.up.railway.app",
+            "https://safechat-production.up.railway.app/",
+            "http://safechat-production.up.railway.app",
+            "http://safechat-production.up.railway.app/"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
