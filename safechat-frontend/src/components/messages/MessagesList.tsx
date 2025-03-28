@@ -46,7 +46,9 @@ const MessagesList: React.FC = () => {
   const [useExpiration, setUseExpiration] = useState(true);
   const [typingUser, setTypingUser] = useState<string | null>(null);
   const [deletingMessages, setDeletingMessages] = useState<Set<string>>(new Set());
+  const [messageError, setMessageError] = useState<string | null>(null);
 
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const currentUser = useSelector((state: RootState) => state.auth.user as AuthUser | null);
   const dispatch = useDispatch();
@@ -56,8 +58,17 @@ const MessagesList: React.FC = () => {
     return regex.test(uuid);
   };
 
+  // Auto-resize textarea function
+  const autoResizeTextarea = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 150)}px`; // Max height of 150px
+    }
+  };
+
+  // Fetch users effect
   useEffect(() => {
-    // Only fetch users if currentUser exists
     if (!currentUser) return;
 
     const fetchUsers = async () => {
@@ -80,8 +91,8 @@ const MessagesList: React.FC = () => {
     return () => clearInterval(intervalId);
   }, [currentUser, selectedUser]);
 
+  // Typing status effect
   useEffect(() => {
-    // Only check typing status if currentUser exists
     if (!currentUser) return;
 
     const checkTypingStatus = async () => {
@@ -95,7 +106,7 @@ const MessagesList: React.FC = () => {
           } else {
             setTypingUser(null);
           }
-          console.log("Current typing user:", typingUser); // Debug log
+          console.log("Current typing user:", typingUser);
         } catch (error) {
           console.error('Error checking typing status:', error);
         }
@@ -106,6 +117,7 @@ const MessagesList: React.FC = () => {
     return () => clearInterval(intervalId);
   }, [currentUser, selectedUser, users]);
 
+  // Message expiration check
   const isMessageExpired = (message: MessageType): boolean => {
     if (message.expired) return true;
     if (message.expiresAt) {
@@ -116,8 +128,8 @@ const MessagesList: React.FC = () => {
     return false;
   };
 
+  // Fetch messages effect
   useEffect(() => {
-    // Only fetch messages if currentUser exists
     if (!currentUser) return;
 
     const fetchMessages = async () => {
@@ -144,16 +156,14 @@ const MessagesList: React.FC = () => {
           return message;
         }));
     
-        // Filter out both expired and revoked messages
         const filteredMessages = decryptedMessages.filter(message => {
           const msgExpired = isMessageExpired(message);
           return !msgExpired && !message.revoked;
         });
   
-        // Ensure all messages have a valid senderId
         const processedMessages = filteredMessages.map(msg => ({
           ...msg,
-          id: msg.id || '', // Provide a fallback
+          id: msg.id || '',
           senderId: msg.senderId || 'unknown'
         }));
   
@@ -179,8 +189,8 @@ const MessagesList: React.FC = () => {
     return () => clearInterval(intervalId);
   }, [selectedUser, currentUser]);
 
+  // Handle typing indicator
   const handleTyping = () => {
-    // Only handle typing if currentUser and selectedUser exist
     if (!currentUser || !selectedUser) return;
 
     if (!isTyping) {
@@ -204,10 +214,17 @@ const MessagesList: React.FC = () => {
     setTypingTimeout(timeout);
   };
 
+  // Send message function
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Ensure both currentUser and selectedUser exist
+    setMessageError(null);
+
+    if (newMessage.length > 1000) {
+      setMessageError('Message cannot exceed 1000 characters');
+      return;
+    }
+
     if (!currentUser || !selectedUser || !newMessage.trim()) return;
 
     try {
@@ -217,15 +234,18 @@ const MessagesList: React.FC = () => {
         expirationMinutes: useExpiration ? 1 : 0,
       });
 
-      // Optimistic update with current user's username
       const optimisticMessage = {
         ...response.data,
         senderId: currentUser.id,
-        senderUsername: currentUser.username // Add current user's username immediately
+        senderUsername: currentUser.username
       };
 
       setMessages([...messages, optimisticMessage]);
       setNewMessage('');
+
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
 
       if (typingTimeout) clearTimeout(typingTimeout);
       setIsTyping(false);
@@ -238,21 +258,16 @@ const MessagesList: React.FC = () => {
     }
   };
 
+  // Delete message function
   const deleteMessage = async (message: MessageType) => {
     console.log('Delete message called with:', message);
     console.log('Current user:', currentUser);
   
-    if (!message) {
-      console.error('Cannot delete: No message provided');
+    if (!message || !currentUser) {
+      console.error('Cannot delete: Invalid message or user');
       return;
     }
   
-    if (!currentUser) {
-      console.error('Cannot delete: No current user');
-      return;
-    }
-  
-    // Prioritize messageId, then id, as fallback
     const deleteId = message.messageId || message.id;
   
     if (!deleteId) {
@@ -261,13 +276,11 @@ const MessagesList: React.FC = () => {
     }
   
     try {
-      // Add a temporary set of deleting messages to prevent multiple delete attempts
       setDeletingMessages(prev => new Set(prev.add(deleteId)));
   
       const response = await axios.delete(`/api/messages/${deleteId}`);
       console.log('Delete response:', response.data);
   
-      // Optimistic update
       setMessages(prevMessages => 
         prevMessages.filter((msg) => 
           msg.messageId !== deleteId && msg.id !== deleteId
@@ -276,7 +289,6 @@ const MessagesList: React.FC = () => {
     } catch (error) {
       console.error('Delete error:', error);
     } finally {
-      // Remove the message from deleting set
       setDeletingMessages(prev => {
         const updated = new Set(prev);
         updated.delete(deleteId);
@@ -285,7 +297,7 @@ const MessagesList: React.FC = () => {
     }
   };
   
-  // Add a loading or not authenticated state
+  // Not authenticated state
   if (!currentUser) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -357,16 +369,14 @@ const MessagesList: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-4">
               {messages.map((message) => {
                 const isOwn = 
-                message.senderUsername || 
-                users.find(u => u.id === message.senderId)?.username || 
-                (message.senderId === currentUser?.id ? currentUser.username : `Unknown User (ID: ${message.senderId.slice(0, 8)})`);
+                  message.senderUsername || 
+                  users.find(u => u.id === message.senderId)?.username || 
+                  (message.senderId === currentUser?.id ? currentUser.username : `Unknown User (ID: ${message.senderId.slice(0, 8)})`);
                 
                 const senderName = 
                   message.senderUsername || 
                   users.find(u => u.id === message.senderId)?.username || 
                   (message.senderId === currentUser?.id ? currentUser.username : `Unknown User (ID: ${message.senderId.slice(0, 8)})`);
-                
-                const isDeleting = deletingMessages.has(message.messageId);
 
                 return (
                   <div
@@ -426,17 +436,17 @@ const MessagesList: React.FC = () => {
                         {isOwn && (
                           <div className="ml-2 flex flex-col justify-end mb-2">
                             <button
-                            onClick={() => deleteMessage(message)}
-                            disabled={deletingMessages.has(message.messageId || message.id)}
-                            className={`text-xs hover:text-red-500 ${
-                              deletingMessages.has(message.messageId || message.id)
-                                ? 'text-gray-400 cursor-not-allowed' 
-                                : 'text-gray-500'
-                            }`}
-                          >
-                            {deletingMessages.has(message.messageId || message.id) 
-                              ? 'Deleting...' 
-                              : 'Delete'}
+                              onClick={() => deleteMessage(message)}
+                              disabled={deletingMessages.has(message.messageId || message.id)}
+                              className={`text-xs hover:text-red-500 ${
+                                deletingMessages.has(message.messageId || message.id)
+                                  ? 'text-gray-400 cursor-not-allowed' 
+                                  : 'text-gray-500'
+                              }`}
+                            >
+                              {deletingMessages.has(message.messageId || message.id) 
+                                ? 'Deleting...' 
+                                : 'Delete'}
                             </button>
                           </div>
                         )}
@@ -456,16 +466,31 @@ const MessagesList: React.FC = () => {
 
             <form onSubmit={sendMessage} className="p-4 border-t">
               <div className="flex items-center">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => {
-                    setNewMessage(e.target.value);
-                    handleTyping();
-                  }}
-                  className="flex-1 border rounded-full py-2 px-4 mr-2"
-                  placeholder="Type a message..."
-                />
+                <div className="flex-1 relative">
+                  <textarea
+                    ref={textareaRef}
+                    value={newMessage}
+                    onChange={(e) => {
+                      const truncatedMessage = e.target.value.slice(0, 1000);
+                      setNewMessage(truncatedMessage);
+                      handleTyping();
+                      autoResizeTextarea();
+                    }}
+                    className="w-full border rounded-lg py-2 px-4 mr-2 resize-none overflow-hidden"
+                    placeholder="Type a message..."
+                    rows={1}
+                  />
+                  {messageError && (
+                    <div className="absolute text-red-500 text-xs mt-1">
+                      {messageError}
+                    </div>
+                  )}
+                  {newMessage.length > 0 && (
+                    <div className="absolute right-4 bottom-2 text-xs text-gray-500">
+                      {newMessage.length}/1000
+                    </div>
+                  )}
+                </div>
                 
                 <div className="flex items-center mr-2">
                   <input
@@ -483,6 +508,7 @@ const MessagesList: React.FC = () => {
                 <button
                   type="submit"
                   className="bg-blue-500 text-white px-4 py-2 rounded-full"
+                  disabled={newMessage.length > 1000}
                 >
                   Send
                 </button>
