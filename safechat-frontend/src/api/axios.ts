@@ -1,7 +1,10 @@
-// src/api/axios.ts
 import axios from 'axios';
+
+// Use environment variable or fallback to localhost for development
+const BASE_URL = process.env.REACT_APP_BACKEND_URL || 'https://localhost:8443';
+
 const instance = axios.create({
-  baseURL: 'https://localhost:8443', // Your Spring Boot server URL
+  baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -17,6 +20,21 @@ instance.interceptors.request.use(
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add error logging interceptor
+instance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('Axios Error:', {
+      message: error.message,
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      data: error.response?.data
+    });
     return Promise.reject(error);
   }
 );
