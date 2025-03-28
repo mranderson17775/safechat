@@ -119,36 +119,35 @@ const Login = () => {
 
   // Fetch QR code for TOTP setup - this is now always attempted for TOTP
   const fetchQRCode = async (username: string, token: string) => {
-    setQrCodeLoading(true);
-    console.log('Attempting to fetch QR code for:', username);
-    
+    const setupCompleted = localStorage.getItem(`2fa_setup_${username}`);
+    const isInitialSetup = !setupCompleted;
+  
     try {
-      const response = await api.post('/auth/2fa/setup', { 
-        method: 'TOTP',
-        username: username
-      }, {
+      const requestBody = isInitialSetup 
+        ? { method: 'TOTP', username: username } 
+        : { username: username };
+     
+      const response = await api.post('/auth/2fa/setup', requestBody, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
-      console.log('QR code response:', response.data);
-      
+     
       if (response.data && response.data.qrCodeImage) {
         setQrCode(response.data.qrCodeImage);
-        setSecret(response.data.secret || null);
-        console.log('QR code set successfully');
-      } else {
-        console.warn('QR code response did not contain expected data');
+        
+        if (isInitialSetup) {
+          setSecret(response.data.secret || null);
+          localStorage.setItem(`2fa_setup_${username}`, 'true');
+        }
       }
     } catch (err: any) {
       console.error('QR code fetch error:', err?.response?.data || err);
-      // Don't show error to user - QR might not be needed for established TOTP
-    } finally {
-      setQrCodeLoading(false);
     }
   };
 
+
+  
   // Handle 2FA code submission
   const handle2FAVerification = async (e: React.FormEvent) => {
     e.preventDefault();

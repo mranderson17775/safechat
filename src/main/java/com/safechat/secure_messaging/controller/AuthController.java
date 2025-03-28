@@ -99,34 +99,25 @@ public class AuthController {
 
     @PostMapping("/2fa/setup")
     public ResponseEntity setupTwoFactor(@RequestBody TwoFactorRequest request, @RequestHeader("Authorization") String token) {
-        String tokenValue = token.substring(7); // Remove "Bearer " prefix
-        
-        // Option 1: Try to get username from token, fall back to request body
-        String username;
-        try {
-            username = jwtUtils.extractUsername(tokenValue);
-        } catch (Exception e) {
-            // If token parsing fails, use username from request
-            username = request.getUsername();
-        }
+        String username = jwtUtils.extractUsername(token.substring(7));
         
         User user = userRepository.findByUsername(username)
             .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         
-        String secret = twoFactorAuthService.generateSecret();
-        String qrCodeImage = twoFactorAuthService.generateQrCodeImageUri(secret, username);
+        // Only generate a new secret if one doesn't exist
+        if (user.getTwoFactorSecret() == null) {
+            String secret = twoFactorAuthService.generateSecret();
+            user.setTwoFactorSecret(secret);
+            userRepository.save(user);
+        }
         
-        user.setTwoFactorSecret(secret);
-        user.setTwoFactorMethod(request.getMethod());
-        userRepository.save(user);
+        // Always generate QR code with the STORED secret
+        String qrCodeImage = twoFactorAuthService.generateQrCodeImageUri(user.getTwoFactorSecret(), username);
         
-        Map<String, Object> response = new HashMap<>();
-        response.put("secret", secret);
-        response.put("qrCodeImage", qrCodeImage);
-        
-        auditLogService.logEvent(username, "2FA_SETUP_INITIATED", "Two-factor authentication setup initiated");
-        
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(Map.of(
+            "secret", user.getTwoFactorSecret(), 
+            "qrCodeImage", qrCodeImage
+        ));
     }
 
     @PostMapping("/login")
