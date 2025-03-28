@@ -31,4 +31,5 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
             @Param("endDate") LocalDateTime endDate);
 
             void deleteById(@SuppressWarnings("null")     UUID userId);
+            void deleteByUser(User user);
 }

@@ -14,6 +14,7 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -59,7 +60,7 @@ public class AdminController {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AuditLog> auditLogs = new ArrayList<>();
-    
+
     // User management DTOs
     public static class UserCreationRequest {
         private String username;
@@ -357,22 +358,32 @@ public class AdminController {
     }
 
     @DeleteMapping("/users/{userId}")
+    @Transactional // Add this annotation
     public ResponseEntity<?> deleteUser(@PathVariable UUID userId) {
         try {
-            // Simple deletion with built-in cascade
-            userRepository.deleteById(userId);
+            // First, check if user exists
+            User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            // Manually handle related entities before deletion
+            messageRepository.deleteByUser(user);
+            auditLogRepository.deleteByUser(user);
+            
+            // Then delete the user
+            userRepository.delete(user);
+            userRepository.flush(); // Ensure immediate database sync
             
             return ResponseEntity.ok(Map.of(
                 "deleted", true,
                 "userId", userId
             ));
-        } catch (EmptyResultDataAccessException e) {
-            return ResponseEntity.notFound().build();
         } catch (Exception e) {
+            logger.error("Error deleting user", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Failed to delete user"));
+                .body(Map.of("error", "Failed to delete user: " + e.getMessage()));
         }
     }
+
 
     // Message moderation DTO
     public static class MessageModerationRequest {

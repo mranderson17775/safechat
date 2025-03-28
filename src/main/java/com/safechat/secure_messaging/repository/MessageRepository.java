@@ -36,4 +36,5 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
 
     
     void deleteByExpiresAtBefore(LocalDateTime dateTime);
+    void deleteByUser(User user);
 }

@@ -24,4 +24,5 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     List<User> findByRoles(String role);
 
     void deleteById(@SuppressWarnings("null") UUID id);
+    void deleteByUser(User user);
 }
