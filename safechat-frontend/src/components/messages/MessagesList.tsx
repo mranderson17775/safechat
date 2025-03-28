@@ -63,7 +63,7 @@ const MessagesList: React.FC = () => {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 300)}px`; // Increased max height to 300px
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 400)}px`; // Increased max height to 400px
     }
   };
 
@@ -231,7 +231,8 @@ const MessagesList: React.FC = () => {
       const response = await axios.post('/api/messages', {
         receiverId: selectedUser,
         content: newMessage,
-        expirationMinutes: useExpiration ? 1 : 0,
+        expirationMinutes: useExpiration ? 1 : null, // Change to null if no expiration
+        readOnce: false  // Add this if you want to support read-once messages
       });
 
       const optimisticMessage = {
@@ -387,7 +388,7 @@ const MessagesList: React.FC = () => {
                         isOwn ? 'justify-end' : 'justify-start'
                       } w-full`}
                     >
-                      <div className="flex flex-col w-full max-w-[70%]">
+                      <div className="flex flex-col w-full max-w-[80%]">
                         <div 
                           className={`text-xs mb-1 ${
                             isOwn ? 'text-right' : 'text-left'
@@ -419,7 +420,7 @@ const MessagesList: React.FC = () => {
                             
                             {message.expiresAt && (
                               <div className="text-xs mt-1 italic">
-                                Expires in 1m
+                                Expires in {format(new Date(message.expiresAt), 'HH:mm:ss')}
                               </div>
                             )}
                             
@@ -487,7 +488,7 @@ const MessagesList: React.FC = () => {
                     }}
                     className="w-full border rounded-lg py-2 px-4 mr-2 resize-none overflow-hidden"
                     placeholder="Type a message..."
-                    rows={4}
+                    rows={6}  // Increased rows from 4 to 6
                   />
                   {messageError && (
                     <div className="absolute text-red-500 text-xs mt-1">

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/messages")
@@ -210,11 +211,11 @@ public class MessageController {
             User sender = getCurrentUser();
             User receiver = userRepository.findById(request.getReceiverId())
                     .orElseThrow(() -> new RuntimeException("Recipient not found"));
-
+    
             // Encrypt the message content
             String keyId = encryptionService.generateKey();
             Map<String, String> encryptedData = encryptionService.encrypt(request.getContent(), keyId);
-
+    
             // Create and save the message
             Message message = new Message();
             message.setSender(sender);
@@ -226,18 +227,23 @@ public class MessageController {
             message.setRevoked(false);
             message.setReadOnce(request.isReadOnce());
             message.setIv(encryptedData.get("iv"));
-
+    
             // Set expiration if requested
             if (request.getExpirationMinutes() != null && request.getExpirationMinutes() > 0) {
-                message.setExpiresAt(LocalDateTime.now().plusMinutes(request.getExpirationMinutes()));
+                LocalDateTime expirationTime = LocalDateTime.now().plusMinutes(request.getExpirationMinutes());
+                message.setExpiresAt(expirationTime);
+            } else {
+                // Explicitly set to null if no expiration
+                message.setExpiresAt(null);
             }
-
+    
             message = messageRepository.save(message);
-
+    
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
                     "messageId", message.getId(),
                     "sent", true,
-                    "timestamp", message.getTimestamp()
+                    "timestamp", message.getTimestamp(),
+                    "expiresAt", message.getExpiresAt()
             ));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -246,39 +252,43 @@ public class MessageController {
     }
 
     // Get all messages for the current user
-    @GetMapping
-    public ResponseEntity<?> getMessages(
-            @RequestParam(required = false) UUID conversationWith,
-            @RequestParam(required = false, defaultValue = "false") boolean unreadOnly) {
-        try {
-            User currentUser = getCurrentUser();
-            List<Message> messages;
-    
-            if (conversationWith != null) {
-                // Get conversation with specific user
-                messages = messageRepository.findMessagesBetweenUsers(currentUser.getId(), conversationWith);
-            } else if (unreadOnly) {
-                // Get only unread messages
-                messages = messageRepository.findByReceiverIdAndReadFalse(currentUser.getId());
-            } else {
-                // Get all messages where user is sender or receiver
-                List<Message> sent = messageRepository.findBySenderId(currentUser.getId());
-                List<Message> received = messageRepository.findByReceiverId(currentUser.getId());
-                
-                messages = new ArrayList<>();
-                messages.addAll(sent);
-                messages.addAll(received);
-                
-                // Sort by timestamp
-                messages.sort(Comparator.comparing(Message::getTimestamp).reversed());
-            }
-    
-            List<MessageResponse> responses = new ArrayList<>();
-            for (Message message : messages) {
-                // Only decrypt if message is not revoked
-                if (!message.isRevoked()) {
+        @GetMapping
+        public ResponseEntity<?> getMessages(
+                @RequestParam(required = false) UUID conversationWith,
+                @RequestParam(required = false, defaultValue = "false") boolean unreadOnly) {
+            try {
+                User currentUser = getCurrentUser();
+                List<Message> messages;
+
+                if (conversationWith != null) {
+                    // Get conversation with specific user
+                    messages = messageRepository.findMessagesBetweenUsers(currentUser.getId(), conversationWith);
+                } else if (unreadOnly) {
+                    // Get only unread messages
+                    messages = messageRepository.findByReceiverIdAndReadFalse(currentUser.getId());
+                } else {
+                    // Get all messages where user is sender or receiver
+                    List<Message> sent = messageRepository.findBySenderId(currentUser.getId());
+                    List<Message> received = messageRepository.findByReceiverId(currentUser.getId());
+                    
+                    messages = new ArrayList<>();
+                    messages.addAll(sent);
+                    messages.addAll(received);
+                    
+                    // Sort by timestamp
+                    messages.sort(Comparator.comparing(Message::getTimestamp).reversed());
+                }
+
+                // Filter out expired messages
+                LocalDateTime now = LocalDateTime.now();
+                messages = messages.stream()
+                    .filter(msg -> msg.getExpiresAt() == null || msg.getExpiresAt().isAfter(now))
+                    .collect(Collectors.toList());
+
+                List<MessageResponse> responses = new ArrayList<>();
+                for (Message message : messages) {
+                    // Decryption logic remains the same
                     try {
-                        // Decrypt message content properly
                         String decryptedContent;
                         if (message.getKeyId() != null && message.getIv() != null) {
                             decryptedContent = encryptionService.decrypt(message.getContent(), message.getIv(), message.getKeyId());
@@ -287,21 +297,16 @@ public class MessageController {
                         }
                         responses.add(new MessageResponse(message, decryptedContent));
                     } catch (Exception e) {
-                        // If decryption fails, include message with placeholder content
                         responses.add(new MessageResponse(message, "[Unable to decrypt message]"));
                     }
-                } else {
-                    // For revoked messages
-                    responses.add(new MessageResponse(message, "[Message has been revoked by an Admin]"));
                 }
+
+                return ResponseEntity.ok(responses);
+            } catch (Exception e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(Map.of("error", "Failed to retrieve messages: " + e.getMessage()));
             }
-    
-            return ResponseEntity.ok(responses);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to retrieve messages: " + e.getMessage()));
         }
-    }
 
     // Get a specific message
     @GetMapping("/{messageId}")
