@@ -170,7 +170,7 @@ public class SecurityConfig {
             "https://localhost:3000",
             "ws://localhost:3000",
             "wss://localhost:3000",
-            "https://safechat-production.up.railway.app/"
+             "https://safechat-production.up.railway.app"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));

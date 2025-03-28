@@ -3,6 +3,7 @@ package com.safechat.secure_messaging.config;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -45,5 +46,18 @@ public class WebConfig implements WebMvcConfigurer {
         public String resolveUrlPath(String resourcePath, List<? extends Resource> locations, ResourceResolverChain chain) {
             return chain.resolveUrlPath(resourcePath, locations);
         }
+    }
+
+        @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+            .allowedOrigins(
+                "https://safechat-production.up.railway.app", 
+                "http://localhost:3000", 
+                "https://localhost:3000"
+            )
+            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+            .allowedHeaders("*")
+            .allowCredentials(true);
     }
 }
