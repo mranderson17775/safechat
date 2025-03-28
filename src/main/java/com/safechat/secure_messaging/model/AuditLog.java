@@ -10,11 +10,9 @@ public class AuditLog {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
     
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
-
-   
     
     @Column(nullable = false)
     private String action;
