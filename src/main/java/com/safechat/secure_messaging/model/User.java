@@ -4,9 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import jakarta.persistence.*;
@@ -35,15 +33,7 @@ public class User {
     @CollectionTable(name = "USER_ROLES", joinColumns = {@JoinColumn(name = "user_id")})
     @Column(name = "role")
     private Set<String> roles = new HashSet<>();
-       @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Message> sentMessages = new ArrayList<>();
-
-    @OneToMany(mappedBy = "receiver", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Message> receivedMessages = new ArrayList<>();
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<AuditLog> auditLogs = new ArrayList<>();
-    
+   
     // 2FA fields
     private boolean twoFactorEnabled = false;
     private String twoFactorSecret;

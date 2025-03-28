@@ -10,11 +10,8 @@ import com.safechat.secure_messaging.repository.MessageRepository;
 import com.safechat.secure_messaging.repository.UserRepository;
 import com.safechat.secure_messaging.service.MessageExpirationService;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.PersistenceContext;
-import jakarta.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -55,11 +52,6 @@ public class AdminController {
 
     @PersistenceContext
     private EntityManager entityManager;
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Message> messages = new ArrayList<>();
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<AuditLog> auditLogs = new ArrayList<>();
 
     // User management DTOs
     public static class UserCreationRequest {
@@ -358,43 +350,20 @@ public class AdminController {
     }
 
     @DeleteMapping("/users/{userId}")
-    @Transactional
-    public ResponseEntity<?> forceDeleteUser(@PathVariable UUID userId) {
+    public ResponseEntity<?> deleteUser(@PathVariable UUID userId) {
         try {
-            // Find the user first
-            User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-            
-            // Log who is performing the deletion
-            User currentAdmin = getCurrentAdmin();
-            
-            // Force delete related entities
-            userRepository.forceDeleteMessages(userId);
-            userRepository.forceDeleteAuditLogs(userId);
-            
-            // Additional cleanup queries can be added here if needed
-            
-            // Actually delete the user
-            userRepository.delete(user);
-            userRepository.flush();
-            
-            // Create an audit log of the deletion
-            AuditLog log = new AuditLog();
-            log.setUser(currentAdmin);
-            log.setAction("USER_FORCE_DELETED");
-            log.setDetails("Force deleted user: " + user.getUsername() + " by admin: " + currentAdmin.getUsername());
-            log.setTimestamp(LocalDateTime.now());
-            auditLogRepository.save(log);
+            // Simple deletion with built-in cascade
+            userRepository.deleteById(userId);
             
             return ResponseEntity.ok(Map.of(
                 "deleted", true,
-                "userId", userId,
-                "message", "User and all associated data have been permanently removed"
+                "userId", userId
             ));
+        } catch (EmptyResultDataAccessException e) {
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            logger.error("Error force deleting user", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Failed to force delete user: " + e.getMessage()));
+                .body(Map.of("error", "Failed to delete user"));
         }
     }
 
