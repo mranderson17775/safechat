@@ -92,6 +92,7 @@ public class SecurityConfig {
                     "/api/messages/typing",
                     "/api/messages/typing-stopped",
                     "/api/messages/typing-status",
+                    "/api/messages/admin/all",
                     "/api/admin/messages/{messageId}/revoke",
                     "/api/admin/messages",
                     "/api/admin/users/{userId}",

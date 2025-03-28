@@ -9,7 +9,6 @@ import com.safechat.secure_messaging.service.MessageExpirationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -450,42 +449,5 @@ public class MessageController {
                 ));
         }
     }
-        @GetMapping
-    @PreAuthorize("hasRole('ROLE_SUPPORT_ADMIN') or hasRole('ROLE_SUPER_ADMIN')")
-    public ResponseEntity<?> getAllMessages() {
-        try {
-            // Retrieve ALL messages without filtering by user
-            List<Message> messages = messageRepository.findAll();
-
-            // Filter out expired messages
-            LocalDateTime now = LocalDateTime.now();
-            messages = messages.stream()
-                .filter(msg -> msg.getExpiresAt() == null || msg.getExpiresAt().isAfter(now))
-                .collect(Collectors.toList());
-
-            List<MessageResponse> responses = new ArrayList<>();
-            for (Message message : messages) {
-                try {
-                    String decryptedContent;
-                    if (message.getKeyId() != null && message.getIv() != null) {
-                        decryptedContent = encryptionService.decrypt(
-                            message.getContent(), 
-                            message.getIv(), 
-                            message.getKeyId()
-                        );
-                    } else {
-                        decryptedContent = "[Message no longer available]";
-                    }
-                    responses.add(new MessageResponse(message, decryptedContent));
-                } catch (Exception e) {
-                    responses.add(new MessageResponse(message, "[Message Decryption Failed]"));
-                }
-            }
-
-            return ResponseEntity.ok(responses);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Failed to retrieve all messages: " + e.getMessage()));
-        }
-    }
+    
 }
