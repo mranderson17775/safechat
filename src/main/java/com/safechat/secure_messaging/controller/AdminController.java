@@ -365,13 +365,22 @@ public class AdminController {
             User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
             
-            // Delete related entities
-            messageRepository.deleteByUser(user);
-            auditLogRepository.deleteByUser(user);
+            // Delete related entities 
+            // Note the order is important to avoid foreign key constraint violations
+            userRepository.deleteMessagesByUser(user);
+            userRepository.deleteAuditLogsByUser(user);
             
             // Then delete the user
             userRepository.delete(user);
             userRepository.flush(); // Ensure immediate database sync
+            
+            // Log deletion action
+            AuditLog log = new AuditLog();
+            log.setUser(getCurrentAdmin());
+            log.setAction("USER_DELETED");
+            log.setDetails("Deleted user: " + user.getUsername());
+            log.setTimestamp(LocalDateTime.now());
+            auditLogRepository.save(log);
             
             return ResponseEntity.ok(Map.of(
                 "deleted", true,
@@ -383,7 +392,6 @@ public class AdminController {
                 .body(Map.of("error", "Failed to delete user: " + e.getMessage()));
         }
     }
-
 
     // Message moderation DTO
     public static class MessageModerationRequest {
