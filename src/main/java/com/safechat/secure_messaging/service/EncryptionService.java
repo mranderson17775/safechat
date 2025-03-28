@@ -2,8 +2,7 @@ package com.safechat.secure_messaging.service;
 
 import com.safechat.secure_messaging.model.KeyEntity;
 import com.safechat.secure_messaging.repository.KeyRepository;
-import io.github.cdimascio.dotenv.Dotenv;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
@@ -19,28 +18,33 @@ import java.util.UUID;
 
 @Service
 public class EncryptionService {
-    @Autowired
-    private KeyRepository keyRepository;
+    private final KeyRepository keyRepository;
     
-    // Cache to avoid frequent DB lookups (optional)
+    // Cache to avoid frequent DB lookups
     private final Map<String, SecretKey> keyCache = new HashMap<>();
     
     private static final String ALGORITHM = "AES/GCM/NoPadding";
     private static final int GCM_TAG_LENGTH = 128;
     
-    // Load the master encryption key from the environment variables
-    private final Dotenv dotenv = Dotenv.load();
-    private final String masterKeyStr = dotenv.get("ENCRYPTION_KEY");
+    // Load the master encryption key from environment variables using Spring's @Value
     private final SecretKey masterKey;
     
-    public EncryptionService() {
+    // Constructor with dependency injection
+    public EncryptionService(
+        KeyRepository keyRepository, 
+        @Value("${ENCRYPTION_KEY}") String masterKeyStr
+    ) {
+        this.keyRepository = keyRepository;
+        
+        // Validate master key
         if (masterKeyStr == null || masterKeyStr.trim().isEmpty()) {
             throw new RuntimeException("ENCRYPTION_KEY must be provided in environment variables");
         }
         
         try {
             // Initialize the master key from environment variable
-            this.masterKey = new SecretKeySpec(Base64.getDecoder().decode(masterKeyStr), "AES");
+            byte[] keyBytes = Base64.getDecoder().decode(masterKeyStr);
+            this.masterKey = new SecretKeySpec(keyBytes, "AES");
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid ENCRYPTION_KEY format. Must be Base64 encoded", e);
         }
