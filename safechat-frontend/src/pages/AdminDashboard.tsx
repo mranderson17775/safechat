@@ -49,7 +49,6 @@ const AdminDashboard: React.FC = () => {
         const response = await axios.get('/user/profile');
         setCurrentUser(response.data);
         
-        console.log("Current user roles:", response.data.roles); // Debug roles
         
         // Make sure you're checking for the same role names here
         if (
@@ -98,10 +97,8 @@ const AdminDashboard: React.FC = () => {
 
           try {
             const messagesResponse = await axios.get('/api/messages');
-            console.log("Raw messages:", messagesResponse.data);
             
             const messagesWithLogging = messagesResponse.data.map((message: Message) => {
-              console.log(`Message ${message.id}`);
               return message;
             });
             
@@ -194,14 +191,12 @@ const AdminDashboard: React.FC = () => {
   const fetchUsers = async () => {
     try {
       const response = await axios.get('/user/all');
-      console.log("Raw user data:", response.data);
       
       const mappedUsers = response.data.map((user: { roles: string | string[]; username: any; }) => {
         const hasAdminRole = user.roles && (
           user.roles.includes('ROLE_SUPPORT_ADMIN') || 
           user.roles.includes('ROLE_SUPER_ADMIN')
         );
-        console.log(`User ${user.username} - has admin role: ${hasAdminRole}`);
         
         return {
           ...user,
@@ -209,7 +204,6 @@ const AdminDashboard: React.FC = () => {
         };
       });
       
-      console.log("Processed users:", mappedUsers);
       setUsers(mappedUsers);
       return mappedUsers;
     } catch (error) {
@@ -274,7 +268,6 @@ const AdminDashboard: React.FC = () => {
     try {
       const response = await axios.get(`/api/messages/${messageId}`);
       
-      console.log("Full message details:", JSON.stringify(response.data, null, 2));
       
       // Set the selected message without `isEncrypted` and `readOnce`
       setSelectedMessage({

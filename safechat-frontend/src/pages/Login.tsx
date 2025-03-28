@@ -34,14 +34,13 @@ const Login = () => {
     setError('');
 
     try {
-      // Log the request for debugging
-      console.log('Sending login request with:', { username });
+
 
       const response = await api.post('/auth/login', { username, password });
       const data = response.data;
 
       // Log the response for debugging
-      console.log('Received login response:', data);
+
       setDebugInfo(data);
 
       if (data.requires2FA) {
@@ -58,7 +57,6 @@ const Login = () => {
         if (data.tempToken) {
           setTempToken(data.tempToken);
           localStorage.setItem('tempToken', data.tempToken);
-          console.log('Stored tempToken:', data.tempToken);
         }
         
         // Store username in localStorage for the 2FA flow
@@ -154,8 +152,7 @@ const Login = () => {
     setError('');
   
     try {
-      // Log request for debugging
-      console.log('Sending 2FA verification with:', { username, method, codeLength: twoFactorCode.length });
+
   
       // Make sure the code is properly formatted (remove spaces if any)
       const formattedCode = twoFactorCode.replace(/\s/g, '');
@@ -168,8 +165,7 @@ const Login = () => {
 
       const data = response.data;
 
-      // Log response for debugging
-      console.log('Received 2FA verification response:', data);
+
 
       if (data.token) {
         // Save token and update Redux
@@ -219,7 +215,6 @@ const Login = () => {
     setError('');
   
     try {
-      console.log('Attempting to resend code for user:', username);
       
       // Include all required fields, even if code is empty
       const response = await api.post(
@@ -231,7 +226,6 @@ const Login = () => {
         }
       );
       
-      console.log('Resend response:', response.data);
       setResendSuccess(true);
       setTimeout(() => {
         setResendSuccess(false);

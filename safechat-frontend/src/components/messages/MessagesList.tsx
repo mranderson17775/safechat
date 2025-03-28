@@ -74,7 +74,6 @@ const MessagesList: React.FC = () => {
     const fetchUsers = async () => {
       try {
         const response = await axios.get('/user/all');
-        console.log('Fetched Users:', response.data);
         setUsers(response.data);
         
         if (response.data.length > 0 && !selectedUser) {
@@ -106,7 +105,6 @@ const MessagesList: React.FC = () => {
           } else {
             setTypingUser(null);
           }
-          console.log("Current typing user:", typingUser);
         } catch (error) {
           console.error('Error checking typing status:', error);
         }
@@ -137,7 +135,6 @@ const MessagesList: React.FC = () => {
     
       try {
         const response = await axios.get(`/api/messages?conversationWith=${selectedUser}`);
-        console.log('Fetched Messages:', response.data);
         
         const decryptedMessages = await Promise.all(response.data.map(async (message: MessageType) => {
           if (message.isEncrypted) {
@@ -262,9 +259,7 @@ const MessagesList: React.FC = () => {
 
   // Delete message function
   const deleteMessage = async (message: MessageType) => {
-    console.log('Delete message called with:', message);
-    console.log('Current user:', currentUser);
-  
+
     if (!message || !currentUser) {
       console.error('Cannot delete: Invalid message or user');
       return;
@@ -280,8 +275,7 @@ const MessagesList: React.FC = () => {
     try {
       setDeletingMessages(prev => new Set(prev.add(deleteId)));
   
-      const response = await axios.delete(`/api/messages/${deleteId}`);
-      console.log('Delete response:', response.data);
+    
   
       setMessages(prevMessages => 
         prevMessages.filter((msg) => 

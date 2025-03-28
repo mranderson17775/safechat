@@ -35,7 +35,6 @@ class WebSocketService {
   }
   
   private onOpen(event: Event): void {
-    console.log('WebSocket connection established');
     this.reconnectAttempts = 0;
   }
   
@@ -76,7 +75,6 @@ class WebSocketService {
           break;
           
         default:
-          console.log('Unknown message type:', data.type);
       }
     } catch (error) {
       console.error('Error parsing WebSocket message:', error);
@@ -84,14 +82,12 @@ class WebSocketService {
   }
   
   private onClose(event: CloseEvent): void {
-    console.log('WebSocket connection closed', event.code, event.reason);
+
     
     // Attempt to reconnect if not a normal closure
     if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-      
-      console.log(`Attempting to reconnect in ${delay / 1000} seconds...`);
       
       this.reconnectTimeout = setTimeout(() => {
         const token = store.getState().auth.token;

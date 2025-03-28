@@ -23,7 +23,6 @@ const Messages: React.FC = () => {
     // More explicit redirection logic
     if (!loading) {
       if (!isAuthenticated) {
-        console.log('Redirecting to login');
         navigate('/login', { replace: true });
       }
     }
