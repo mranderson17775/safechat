@@ -14,7 +14,6 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -24,8 +23,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -34,7 +31,7 @@ import java.util.*;
 @RequestMapping("/api/admin")
 @PreAuthorize("hasRole('SUPPORT_ADMIN') or hasRole('SUPER_ADMIN')")
 public class AdminController {
-    private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
+
     @Autowired
     private UserRepository userRepository;
 
@@ -62,6 +59,7 @@ public class AdminController {
         private boolean twoFactorEnabled;
         private String twoFactorMethod;
         private String phoneNumber;
+
         // Getters and setters
         public String getUsername() {
             return username;
@@ -352,20 +350,54 @@ public class AdminController {
     @DeleteMapping("/users/{userId}")
     public ResponseEntity<?> deleteUser(@PathVariable UUID userId) {
         try {
-            // Simple deletion with built-in cascade
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            // Get the current admin for authorization and audit log
+            User currentAdmin = getCurrentAdmin();
+            
+            // Check if attempting to delete a super admin
+            if (user.getRoles().contains(UserRoles.ROLE_SUPER_ADMIN)) {
+                // Only another super admin can delete a super admin
+                if (!currentAdmin.getRoles().contains(UserRoles.ROLE_SUPER_ADMIN)) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body(Map.of("error", "Cannot delete a super admin user"));
+                }
+            }
+            
+            // Store username for audit log
+            String username = user.getUsername();
+            
+            // Handle all dependencies in order
+            // 1. Delete messages related to this user
+            messageRepository.deleteByReceiverIdOrSenderIdOrRevokedBy(userId, userId, user);
+            
+            // 2. Delete audit logs for this user
+            auditLogRepository.deleteById(userId);
+            
+            // 3. Delete user roles
             userRepository.deleteById(userId);
             
+            
+            // Create a new audit log entry for the deletion
+            AuditLog log = new AuditLog();
+            log.setUser(currentAdmin);
+            log.setAction("USER_DELETED");
+            log.setDetails("Admin deleted user: " + username);
+            log.setTimestamp(LocalDateTime.now());
+            auditLogRepository.save(log);
+            
             return ResponseEntity.ok(Map.of(
-                "deleted", true,
-                "userId", userId
+                    "deleted", true,
+                    "userId", userId
             ));
-        } catch (EmptyResultDataAccessException e) {
-            return ResponseEntity.notFound().build();
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Failed to delete user"));
+                    .body(Map.of("error", "Failed to delete user: " + e.getMessage()));
         }
     }
+
 
     // Message moderation DTO
     public static class MessageModerationRequest {
