@@ -143,7 +143,7 @@ public class SecurityConfig {
                     "style-src 'self' 'unsafe-inline'; " + // Allow stylesheets from same-origin
                     "img-src 'self' data:; " + // Allow images from same-origin and inline images
                     "font-src 'self' data:; " + // Allow fonts from same-origin
-                    "connect-src 'self'; " + // Allow API calls to same-origin
+                    "connect-src 'self' https://localhost:8443 https://safechat-production.up.railway.app https://your-actual-backend-domain.com; " +  // Allow API calls to same-origin
                     "frame-ancestors 'none'; " + // Prevent embedding in iframes
                     "form-action 'self';" // Restrict form submissions to same-origin
                 ))
