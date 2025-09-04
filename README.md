@@ -3,7 +3,7 @@ SafeChat – Secure Messaging App
 SafeChat is a full-stack secure messaging platform built with a strong focus on real-time communication, authentication, and user privacy.
 It combines a Spring Boot backend with a modern React/TypeScript frontend to deliver fast, scalable, and secure chat functionality.
 
-🚀 Features
+Features
 
 Real-Time Messaging using WebSockets (STOMP + SockJS)
 
@@ -21,7 +21,7 @@ Secure Configuration Management with dotenv libraries
 
 Automated Build/Deployment bundling React frontend into Spring Boot resources
 
-🛠️ Tech Stack
+Tech Stack
 
 Backend
 
